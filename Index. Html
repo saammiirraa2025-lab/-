@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بازی عربی هشتم - درس سوم</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: Tahoma, Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex; justify-content: center; align-items: center; padding: 20px;
+  }
+  .game {
+    background: #fff; border-radius: 20px; padding: 28px;
+    width: 100%; max-width: 720px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .counter { background: #eef; padding: 8px 16px; border-radius: 10px; color: #4a4a8a; font-weight: bold; }
+  .timer { font-size: 26px; font-weight: bold; color: #4a4a8a; min-width: 50px; text-align: center; }
+  .timer-bar { height: 10px; background: #eee; border-radius: 10px; overflow: hidden; margin-bottom: 22px; }
+  .timer-fill { height: 100%; width: 100%; background: linear-gradient(90deg,#4CAF50,#8BC34A); transition: width .1s linear; }
+  .timer-fill.warning { background: linear-gradient(90deg,#ff9800,#f44336); }
+  .word {
+    font-size: 68px; text-align: center; color: #2c2c54;
+    margin: 20px 0 30px; font-weight: bold; direction: rtl;
+  }
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+  .option {
+    padding: 22px 10px; background: #f5f5ff; border: 2px solid #ddd;
+    border-radius: 15px; text-align: center; font-size: 22px;
+    cursor: pointer; transition: all .2s; user-select: none;
+  }
+  .option:hover { background: #e8e8ff; border-color: #667eea; transform: translateY(-2px); }
+  .option.correct { background: #c8e6c9; border-color: #4CAF50; animation: pulse .5s; }
+  .option.wrong   { background: #ffcdd2; border-color: #f44336; animation: shake .5s; }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-8px);} 75%{transform:translateX(8px);} }
+  @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.06);} }
+  .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  button {
+    padding: 12px 22px; border: none; border-radius: 10px;
+    font-size: 16px; font-family: inherit; cursor: pointer;
+    font-weight: bold; transition: all .2s; color: #fff;
+  }
+  button:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,.2); }
+  .btn-prev, .btn-next { background: #667eea; }
+  .btn-stop    { background: #f44336; }
+  .btn-start   { background: #4CAF50; }
+  .btn-shuffle { background: #ff9800; }
+  .btn-restart { background: #9c27b0; }
+</style>
+</head>
+<body>
+<div class="game">
+  <div class="header">
+    <div class="counter">کلمه <span id="current">1</span> از <span id="total">3</span></div>
+    <div class="timer" id="timerText">3</div>
+  </div>
+  <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+  <div class="word" id="word">صارَ</div>
+  <div class="options" id="options"></div>
+  <div class="controls">
+    <button class="btn-prev"    id="prevBtn">◀ قبل</button>
+    <button class="btn-stop"    id="stopBtn">⏸ Stop</button>
+    <button class="btn-start"   id="startBtn">▶ Start</button>
+    <button class="btn-next"    id="nextBtn">بعد ▶</button>
+    <button class="btn-shuffle" id="shuffleBtn">🔀 جابه‌جایی</button>
+    <button class="btn-restart" id="restartBtn" style="display:none;">🔄 شروع دوباره</button>
+  </div>
+</div>
+    <div style="text-align:center; color:#999; font-size:13px; margin-top:20px; padding-top:15px; border-top:1px dashed #ddd;">
+      🎨 طراح بازی: <b>زینب سادات میر مهدوی</b>
+    </div>
+  </div>
+</div>
+
+<script>
+<script>
+/* کلمات درس سوم عربی هشتم - دقیقاً طبق عکسی که فرستادی */
+const words = [
+  { ar: "آخَرین", fa: "دیگران" },
+  { ar: "صارَ", fa: "شد" },
+  { ar: "أَحَبَّ", fa: "دوست داشت" },
+  { ar: "طِبُّ العُیون", fa: "چشم پزشکی" },
+  { ar: "أَصحابُ المِهَن", fa: "صاحبان شغل ها" },
+  { ar: "عَنْ", fa: "درباره" },
+  { ar: "بِلاد", fa: "کشور" },
+  { ar: "عَیْن", fa: "چشم" },
+  { ar: "بَیْع", fa: "فروش" },
+  { ar: "فَحَصَ", fa: "معاینه کرد" },
+  { ar: "تَقَدُّم", fa: "پیشرفت" },
+  { ar: "مَرْضی", fa: "بیماران" },
+  { ar: "تَهیِئَة", fa: "تهیه" },
+  { ar: "مُستَقبَل", fa: "آینده" },
+  { ar: "خُبْز", fa: "نان" },
+  { ar: "مِهْنَة", fa: "شغل" },
+  { ar: "رِیاضَة", fa: "ورزش" },
+  { ar: "یَحْتاجُ", fa: "نیاز دارد" }
+];
+
+const TOTAL_SECONDS = 3.0;
+let currentIndex = 0;
+let timeLeft = TOTAL_SECONDS;
+let timerInterval = null;
+let isStopped = false;
+let answered = false;
+
+const $word     = document.getElementById('word');
+const $options  = document.getElementById('options');
+const $timerTxt = document.getElementById('timerText');
+const $timerBar = document.getElementById('timerFill');
+const $cur      = document.getElementById('current');
+const $total    = document.getElementById('total');
+const $restart  = document.getElementById('restartBtn');
+
+$total.textContent = words.length;
+
+function shuffleArr(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildOptions(correctFa) {
+  const others = words.filter(w => w.fa !== correctFa).map(w => w.fa);
+  const wrongs = shuffleArr(others).slice(0, 3);
+  return shuffleArr([correctFa, ...wrongs]);
+}
+
+function loadWord(index) {
+  clearInterval(timerInterval);
+  currentIndex = ((index % words.length) + words.length) % words.length;
+  const w = words[currentIndex];
+
+  $word.textContent = w.ar;
+  $cur.textContent  = currentIndex + 1;
+
+  $options.innerHTML = '';
+  buildOptions(w.fa).forEach(opt => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.textContent = opt;
+    div.dataset.correct = (opt === w.fa) ? '1' : '0';
+    div.addEventListener('click', () => handleAnswer(div));
+    $options.appendChild(div);
+  });
+
+  $restart.style.display = 'none';   // دکمه شروع دوباره پنهان بشه
+
+  answered  = false;
+  isStopped = false;
+  resetTimer();
+}
+
+function resetTimer() {
+  clearInterval(timerInterval);
+  timeLeft = TOTAL_SECONDS;
+  isStopped = false;
+  updateTimerUI();
+
+  timerInterval = setInterval(() => {
+    if (isStopped) return;
+    timeLeft -= 0.1;
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      updateTimerUI();
+      clearInterval(timerInterval);
+      onTimeout();
+    } else {
+      updateTimerUI();
+    }
+  }, 100);
+}
+
+function updateTimerUI() {
+  $timerTxt.textContent = Math.ceil(timeLeft);
+  $timerBar.style.width = (timeLeft / TOTAL_SECONDS) * 100 + '%';
+  if (timeLeft <= 1.0) $timerBar.classList.add('warning');
+  else                 $timerBar.classList.remove('warning');
+}
+
+function onTimeout() {
+  if (isStopped || answered) return;
+
+  /* اگه کلمه آخر بود، به جای رفتن به کلمه بعد، دکمه شروع دوباره رو نشون بده */
+  if (currentIndex === words.length - 1) {
+    $restart.style.display = 'inline-block';
+    return;
+  }
+
+  setTimeout(() => { if (!isStopped && !answered) goNext(); }, 150);
+}
+
+function handleAnswer(el) {
+  if (answered) return;
+  if (el.dataset.correct === '1') {
+    answered = true;
+    el.classList.add('correct');
+    clearInterval(timerInterval);
+    setTimeout(goNext, 700);
+  } else {
+    el.classList.add('wrong');
+    setTimeout(() => el.classList.remove('wrong'), 600);
+  }
+}
+
+function goNext() { loadWord(currentIndex + 1); }
+function goPrev() { loadWord(currentIndex - 1); }
+
+function stopTimer() {
+  isStopped = true;
+  clearInterval(timerInterval);
+  $timerTxt.textContent = '⏸';
+}
+
+function startTimer() {
+  if (isStopped) {
+    goNext();
+  } else {
+    resetTimer();
+  }
+}
+
+function shuffleWord() {
+  if (words.length < 2) { loadWord(currentIndex); return; }
+  let newIdx = currentIndex;
+  while (newIdx === currentIndex) {
+    newIdx = Math.floor(Math.random() * words.length);
+  }
+  loadWord(newIdx);
+}
+
+document.getElementById('prevBtn').addEventListener('click', goPrev);
+document.getElementById('nextBtn').addEventListener('click', goNext);
+document.getElementById('stopBtn').addEventListener('click', stopTimer);
+document.getElementById('startBtn').addEventListener('click', startTimer);
+document.getElementById('shuffleBtn').addEventListener('click', shuffleWord);
+$restart.addEventListener('click', () => loadWord(0));
+
+loadWord(0);
+</script>
+</body>
+</html>
